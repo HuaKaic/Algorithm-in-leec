@@ -1,4 +1,5 @@
 // huawei test in 9.14
+*** 
 #include <vector>
 #include <iostream>
 #include <unordered_map>
@@ -35,3 +36,127 @@ int main () {
     cout << "total methods: " << dp[bridge_lens + 1][0] << "cost life: " << dp[bridge_lens + 1][1];
     return 0;
 }
+***
+// huawei_test 0907
+#include <iostream>
+#include <queue>
+#include <climits>
+#include <fstream>
+using namespace  std;
+
+bool check_dir(vector<int> path) {
+    if ((path[2] == 1 && path[3] == 0) || (path[2] == -1 && path[3] == 0)) {
+        return true;
+    }
+    return false;
+}
+int count_rows(vector<int> path) {
+    int path_sum = 0;
+    for (int i = 0; i < path.size();) {
+        path_sum += path[0];
+        i += 2;
+    }
+    return path_sum;
+}
+int count_cols(vector<int> path) {
+    int path_sum = 0;
+    for (int i = 1; i < path.size();) {
+        path_sum += path[0];
+        i += 2;
+    }
+    return path_sum;
+}
+bool check_valid(vector<vector<int>> map_, int x, int y) {
+    if (x >= 0 && x <map_.size() && y >= 0 && y < map_[0].size()) {
+        return true;
+    }
+    return false;
+}
+int main() {
+    int rows = 8, cols = 15, x = 8, y = 1;
+    vector<vector<int>> visited_(8, vector<int>(15, 0));
+    vector<vector<int>> map_ = visited_;
+    visited_[x - 1][y - 1] = 1;
+    ifstream fin;
+    fin.open("/home/jiaming/CLionProjects/interview/map.txt");
+    if (!fin) cout << "file open error" << endl;
+    for (int i = 0; i < map_.size(); i++) {
+        for (int j = 0; j < map_[0].size(); j++) {
+            fin >> map_[i][j];
+            // cout << map_[i][j] << endl;
+        }
+    }
+    fin.close();
+    vector<vector<int>> directions = {{1, 0}, {0, -1}, {0, 1}, {-1, 0}};
+    typedef pair<vector<int>, vector<int>> pair_;
+    queue<pair_> que;
+    vector<int> pos = {7, 0, 0, 0}; // 当前位置 上一步位置
+    vector<int> path;
+    path.push_back(x - 1);
+    path.push_back(y - 1);
+    pair_ tmp_info = make_pair(pos, path);
+    que.push(tmp_info);
+    int parking_pos[3];
+    parking_pos[0] = INT_MAX;
+    vector<int> final_path;
+    while (!que.empty()) {
+        pair_ tmp = que.front();
+        que.pop();
+        vector<int> tmp1 = tmp.first;
+        vector<int> tmp2 = tmp.second;
+        int x = tmp1[0], y = tmp1[1];
+        int path_lens = tmp2.size() / 2;
+        // 找到车位
+        if (map_[tmp1[0]][tmp1[1]] == 1 && check_dir(tmp1)) {
+            if (path_lens == parking_pos[0]) {
+                // 找到相同距离的车位且和之前的车位不同
+                // 优先选择行小的
+                if (tmp1[0] < parking_pos[1]) {
+                    parking_pos[1] = tmp1[0];
+                    parking_pos[2] = tmp1[1];
+                    final_path = tmp2;
+                } else if (tmp1[0] == parking_pos[1]) {
+                    if (tmp1[1] < parking_pos[2]) {
+                        parking_pos[1] = tmp1[0];
+                        parking_pos[2] = tmp1[1];
+                        final_path = tmp2;
+                    }
+                } else if ((parking_pos[1] == tmp1[0] && parking_pos[2] == tmp1[1])) {
+                    int path_rows = count_rows(tmp2);
+                    int path_cols = count_cols(tmp2);
+                    if (path_rows < count_rows(final_path)) {
+                        final_path = tmp2;
+                    } else if (path_rows == count_rows(tmp2)) {
+                        if (path_cols < count_cols(tmp2)) final_path = tmp2;
+                    }
+                }
+            } else if (path_lens < parking_pos[0]) {
+                // 找到距离更小的车位
+                parking_pos[0] = path_lens;
+                parking_pos[1] = tmp1[0];
+                parking_pos[2] = tmp1[1];
+                final_path = tmp2;
+            }
+        }
+        for (auto dirs : directions) {
+            int x_n = x + dirs[0];
+            int y_n = y + dirs[1];
+            if (check_valid(map_, x_n, y_n) && (map_[x_n][y_n] == 0 || map_[x_n][y_n] == 1) && visited_[x_n][y_n] == 0) {
+                // cout << x_n << y_n;
+                visited_[x_n][y_n] = 1;
+                vector<int> tmp2_n = tmp2;
+                vector<int> tmp1_n = tmp1;
+                tmp2_n.push_back(x_n);
+                tmp2_n.push_back(y_n);
+                tmp1_n[0] = x_n, tmp1_n[1] = y_n;
+                tmp1_n[2] = dirs[0], tmp1_n[3] = dirs[1];
+                pair_ p = make_pair(tmp1_n, tmp2_n);
+                que.push(p);
+            }
+        }
+    }
+    for (auto tmp : final_path) cout << tmp <<endl;
+    return 0;
+
+}
+
